@@ -30,12 +30,16 @@ MethodDef(m,funcName,returnType,args,body) ::= <<
 >>
 
 MainMethod(main,funcName,returnType,args,body) ::= <<
+void main(int argc, char *argv[]){
+    <body>
+}
 >>
 
 Block(block, locals, instrs) ::= <<
+<locals>
 >>
 
-VarDef(var, type)   ::= ""
+VarDef(var, type)   ::= "<type> <var.id>;"
 
 FuncName(f)         ::= ""
 

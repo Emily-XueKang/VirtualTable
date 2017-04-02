@@ -1,5 +1,6 @@
 package cs652.j.semantics;
 
+import cs652.j.codegen.model.ClassDef;
 import cs652.j.parser.JBaseListener;
 import cs652.j.parser.JParser;
 import org.antlr.symtab.*;
@@ -13,9 +14,13 @@ public class ComputeTypes extends JBaseListener {
 	public static final Type JSTRING_TYPE = new JPrimitiveType("string");
 	public static final Type JVOID_TYPE = new JPrimitiveType("void");
 
+
+	public Scope CurrentScope;
+	public ClassDef currentClass;
+
 	public ComputeTypes(GlobalScope globals)
 	{
-		this.currentScope = globals;
+		//this.currentScope = globals;
 	}
 
 	/**
