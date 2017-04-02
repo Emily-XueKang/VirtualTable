@@ -30,27 +30,28 @@ MethodDef(m,funcName,returnType,args,body) ::= <<
 >>
 
 MainMethod(main,funcName,returnType,args,body) ::= <<
-void main(int argc, char *argv[]){
+int main(int argc, char *argv[]){
     <body>
+    return 0;
 }
 >>
 
 Block(block, locals, instrs) ::= <<
-<locals>
+<locals:{l | <l>;}; separator = "\n">
 >>
 
-VarDef(var, type)   ::= "<type> <var.id>;"
+VarDef(var, type)   ::= "<type> <var.id>"
 
 FuncName(f)         ::= ""
 
 ObjectTypeSpec(o)   ::= ""
 PrimitiveTypeSpec(p)::= "<p.name>"
 
-AssignStat(a,left,right) ::= ";"
+AssignStat(a,left,right) ::= "<left> = <right>"
 PrintStringStat(p)  ::= ""
-PrintStat(p,args)   ::= ""
+PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
 CallStat(c,call)    ::= ""
-CtorCall(ctor)      ::= ""
+CtorCall(ctor)      ::= "new <ctor.id>()"
 ReturnStat(r,expr)  ::= ""
 WhileStat(w,condition, stat) ::= ""
 IfStat(i,condition, stat) ::= ""
@@ -59,8 +60,8 @@ IfElseStat(i,condition, stat, elseStat) ::= <<
 
 NullRef(n)          ::= "NULL"
 
-LiteralRef(lit)     ::= ""
-VarRef(v)           ::= ""
+LiteralRef(lit)     ::= "<lit.literal>"
+VarRef(v)           ::= "<v.name>"
 FieldRef(f, object) ::= ""
 ThisRef(t)          ::= "this"
 MethodCall(m, receiver, receiverType, fptrType, args) ::= <<

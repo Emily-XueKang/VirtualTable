@@ -1,10 +1,8 @@
 package cs652.j.codegen;
 
 //import cs652.j.codegen.model.AssignStat;
-import cs652.j.codegen.model.Block;
-import cs652.j.codegen.model.CFile;
+import cs652.j.codegen.model.*;
 //import cs652.j.codegen.model.CallStat;
-import cs652.j.codegen.model.ClassDef;
 //import cs652.j.codegen.model.CtorCall;
 //import cs652.j.codegen.model.Expr;
 //import cs652.j.codegen.model.FieldRef;
@@ -12,13 +10,10 @@ import cs652.j.codegen.model.ClassDef;
 //import cs652.j.codegen.model.IfElseStat;
 //import cs652.j.codegen.model.IfStat;
 //import cs652.j.codegen.model.LiteralRef;
-import cs652.j.codegen.model.MainMethod;
 //import cs652.j.codegen.model.MethodCall;
 //import cs652.j.codegen.model.MethodDef;
 //import cs652.j.codegen.model.NullRef;
 //import cs652.j.codegen.model.ObjectTypeSpec;
-import cs652.j.codegen.model.OutputModelObject;
-import cs652.j.codegen.model.PrimitiveTypeSpec;
 //import cs652.j.codegen.model.PrintStat;
 //import cs652.j.codegen.model.PrintStringStat;
 //import cs652.j.codegen.model.ReturnStat;
@@ -26,7 +21,6 @@ import cs652.j.codegen.model.PrimitiveTypeSpec;
 //import cs652.j.codegen.model.ThisRef;
 //import cs652.j.codegen.model.TypeCast;
 //import cs652.j.codegen.model.TypeSpec;
-import cs652.j.codegen.model.VarDef;
 //import cs652.j.codegen.model.VarRef;
 //import cs652.j.codegen.model.WhileStat;
 import cs652.j.parser.JBaseVisitor;
@@ -93,7 +87,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 	@Override
 	public OutputModelObject visitJType(JParser.JTypeContext ctx) {
-		System.out.println(ctx.getText());
 		String typename;
 		if(ctx.ID() != null){
 			typename = ctx.ID().getText();
@@ -106,4 +99,55 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		}
 		return new PrimitiveTypeSpec(typename);
 	}
+
+	@Override
+	public OutputModelObject visitAssignStat(JParser.AssignStatContext ctx) {
+		VarRef leftvar = (VarRef) visit(ctx.expression(0));
+		OutputModelObject rightvar = visit(ctx.expression(1));
+		AssignStat assignStat = new AssignStat(leftvar,rightvar);
+		return assignStat;
+	}
+
+	@Override
+	public OutputModelObject visitIdRef(JParser.IdRefContext ctx) {
+		String varname = ctx.ID().getText();
+		return new VarRef(varname);
+	}
+
+	@Override
+	public OutputModelObject visitLiteralRef(JParser.LiteralRefContext ctx) {
+		if(ctx.INT() != null){
+			System.out.println(ctx.INT().getText());
+			return new LiteralRef(ctx.INT().getText());
+		}
+		else{
+			System.out.println(ctx.FLOAT().getText());
+			return new LiteralRef(ctx.FLOAT().getText());
+		}
+	}
+
+	@Override
+	public OutputModelObject visitCtorCall(JParser.CtorCallContext ctx) {
+		String ctorid = ctx.ID().getText();
+		return new CtorCall(ctorid);
+	}
+
+	@Override
+	public OutputModelObject visitPrintStat(JParser.PrintStatContext ctx) {
+		PrintStat printStat = new PrintStat(ctx.STRING().getText());
+		for(JParser.ExpressionContext arg : ctx.expressionList().expression()){
+			OutputModelObject a = visit(arg);
+			printStat.addArg(a);
+		}
+		return printStat;
+	}
+
+//	@Override
+//	public OutputModelObject visitExpressionList(JParser.ExpressionListContext ctx) {
+//		ArrayList<OutputModelObject> exprlist = new ArrayList<>();
+//		for(JParser.ExpressionContext expr : ctx.expression()){
+//			exprlist.add(visit(expr));
+//		}
+//		return ;
+//	}
 }
