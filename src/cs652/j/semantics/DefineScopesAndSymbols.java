@@ -66,6 +66,7 @@ public class DefineScopesAndSymbols extends JBaseListener {
 		}
 		currentScope.define(cs);
 		currentScope = cs;
+		ctx.scope = cs;
 	}
 	public void exitClassDeclaration(JParser.ClassDeclarationContext ctx)
 	{
