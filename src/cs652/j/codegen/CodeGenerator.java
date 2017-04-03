@@ -28,10 +28,12 @@ import cs652.j.parser.JParser;
 import cs652.j.semantics.JClass;
 //import cs652.j.semantics.JField;
 import cs652.j.semantics.JMethod;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.symtab.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
+import sun.reflect.generics.tree.TypeSignature;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +58,10 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public OutputModelObject visitFile(JParser.FileContext ctx){
 		CFile file = new CFile(fileName);
 		file.main = (MainMethod)visit(ctx.main());
+		for(JParser.ClassDeclarationContext classDef : ctx.classDeclaration()){
+			OutputModelObject a = visit(classDef);
+			file.addClass((ClassDef) a);
+		}
 		return file;
 	}
 
@@ -64,15 +70,26 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		mainMethod.body = (Block)visit(ctx.block());
 		return mainMethod;
 	}
+
 	public OutputModelObject visitBlock(JParser.BlockContext ctx){
 		Block block = new Block();
 		for(JParser.StatementContext stat : ctx.statement()){
 			OutputModelObject omo = visit(stat);
-			block.locals.add(omo);
+			if(!(omo instanceof Stat)){
+				block.locals.add(omo);
+			}
+			else{
+				block.instrs.add(omo);
+			}
 		}
+
 		return block;
 	}
 
+	@Override
+	public OutputModelObject visitBlockStat(JParser.BlockStatContext ctx) {
+		return super.visitBlockStat(ctx);
+	}
 
 	//visitLocalVarStat call the visitLocalVariable to visit this alternative's child/children
 	public OutputModelObject visitLocalVarStat(JParser.LocalVarStatContext ctx){
@@ -142,7 +159,62 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return printStat;
 	}
 
+	@Override
+	public OutputModelObject visitPrintStringStat(JParser.PrintStringStatContext ctx) {
+		return new PrintStringStat(ctx.STRING().getText());
+	}
+
+	@Override
+	public OutputModelObject visitClassDeclaration(JParser.ClassDeclarationContext ctx) {
+		ClassDef classDef = new ClassDef(ctx.ID(0).getText());
+		for(ParseTree child : ctx.classBody().children){
+			OutputModelObject omo = visit(child);
+			if(omo instanceof VarDef){
+				classDef.addFiled(omo);
+				System.out.println(((VarDef) omo).id);
+			}
+			else{
+				// omo instance of MethodDef
+//				System.out.println(((MethodDef)omo).name);
+				classDef.addMethod(omo);
+			}
+		}
+		return classDef;
+	}
+
 //	@Override
+//	public OutputModelObject visitClassBody(JParser.ClassBodyContext ctx) {
+//
+//	}
+
+//	@Override
+//	public OutputModelObject visitClassBodyDeclaration(JParser.ClassBodyDeclarationContext ctx) {
+//		return super.visitClassBodyDeclaration(ctx);
+//	}
+
+
+	@Override
+	public OutputModelObject visitMethodDeclaration(JParser.MethodDeclarationContext ctx) {
+		String methodname = ctx.ID().getText();
+		MethodDef methodDef = new MethodDef(methodname);
+		currentScope = ctx.scope;
+		currentClass = (JClass) currentScope.getEnclosingScope();
+		String classname = currentClass.getName();
+		FuncPtrType fpt = new FuncPtrType(classname);
+		methodDef.setfunName(fpt);
+		TypeSpec returnType = (TypeSpec) visit(ctx.jType());
+		methodDef.setreturnType(returnType);
+		methodDef.body = visit(ctx.methodBody());
+		return methodDef;
+	}
+
+	/*fileds decl in classdeclaration*/
+	@Override
+	public OutputModelObject visitFieldDeclaration(JParser.FieldDeclarationContext ctx) {
+		return new VarDef(ctx.ID().getText(), visit(ctx.jType()));
+	}
+
+	//	@Override
 //	public OutputModelObject visitExpressionList(JParser.ExpressionListContext ctx) {
 //		ArrayList<OutputModelObject> exprlist = new ArrayList<>();
 //		for(JParser.ExpressionContext expr : ctx.expression()){

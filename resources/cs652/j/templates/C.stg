@@ -18,12 +18,24 @@ object *alloc(metadata *clazz) {
     return p;
 }
 
-<classes>
+<classes; separator ="\n\n">
 
 <main>
 >>
 
 ClassDef(class, fields, methods, vtable) ::= <<
+// D e f i n e  C l a s s  <class.name>
+typedef struct {
+    metadata *clazz;
+    <fields:{f | <f>;}; separator="\n">
+} <class.name>;
+
+
+
+void (*<class.name>_vtable[])() = {
+};
+
+metadata <class.name>_metadata = {"<class.name>", sizeof(<class.name>), &<class.name>_vtable};
 >>
 
 MethodDef(m,funcName,returnType,args,body) ::= <<
@@ -38,6 +50,7 @@ int main(int argc, char *argv[]){
 
 Block(block, locals, instrs) ::= <<
 <locals:{l | <l>;}; separator = "\n">
+<instrs:{i | <i>;}; separator = "\n">
 >>
 
 VarDef(var, type)   ::= "<type> <var.id>"
@@ -48,7 +61,7 @@ ObjectTypeSpec(o)   ::= ""
 PrimitiveTypeSpec(p)::= "<p.name>"
 
 AssignStat(a,left,right) ::= "<left> = <right>"
-PrintStringStat(p)  ::= ""
+PrintStringStat(p)  ::= "printf(<p.thestring>)"
 PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
 CallStat(c,call)    ::= ""
 CtorCall(ctor)      ::= "new <ctor.id>()"

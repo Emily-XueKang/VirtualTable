@@ -7,7 +7,7 @@ import org.antlr.symtab.*;
 
 public class ComputeTypes extends JBaseListener {
 	protected StringBuilder buf = new StringBuilder();
-	Scope currentScope;
+	//Scope currentScope;
 
 	public static final Type JINT_TYPE = new JPrimitiveType("int");
 	public static final Type JFLOAT_TYPE = new JPrimitiveType("float");
@@ -15,7 +15,7 @@ public class ComputeTypes extends JBaseListener {
 	public static final Type JVOID_TYPE = new JPrimitiveType("void");
 
 
-	public Scope CurrentScope;
+	public Scope currentScope;
 	public ClassDef currentClass;
 
 	public ComputeTypes(GlobalScope globals)

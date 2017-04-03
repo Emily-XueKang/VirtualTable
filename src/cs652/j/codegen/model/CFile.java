@@ -8,6 +8,10 @@ public class CFile extends OutputModelObject {
 	@ModelElement public List<ClassDef> classes = new ArrayList<>();
 	@ModelElement public MainMethod main;
 
+	public void addClass(ClassDef classDef){
+		classes.add(classDef);
+	}
+
 	public CFile(String fileName) {
 		this.fileName = fileName;
 	}
