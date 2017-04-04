@@ -11,7 +11,7 @@ public class FuncName extends OutputModelObject {
         this.method = method;
     }
     public String getClassName(){
-        return method.getEnclosingScope().getName();
+            return method.getEnclosingScope().getName();
     }
     public String getMethodName(){
         return method.getName();

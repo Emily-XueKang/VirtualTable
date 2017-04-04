@@ -36,7 +36,7 @@ public class DefineScopesAndSymbols extends JBaseListener {
 		main.setType(type);
 		currentScope.define(main);
 		currentScope = main;
-		ctx.scope = (JMethod) currentScope;
+		ctx.scope = main;
 	}
 	@Override
 	public void exitMain(JParser.MainContext ctx) {

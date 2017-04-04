@@ -5,7 +5,10 @@ import java.util.List;
 /**
  * Created by xuekang on 3/31/17.
  */
-public class MainMethod extends OutputModelObject {
-    @ModelElement
-    public Block body;
+public class MainMethod extends MethodDef {
+
+    public MainMethod(FuncName funcName){
+        super(funcName);
+    }
+
 }

@@ -35,6 +35,7 @@ import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
 import sun.reflect.generics.tree.TypeSignature;
 
+import javax.management.JMException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -56,6 +57,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return file;
 	}
 
+	@Override
 	public OutputModelObject visitFile(JParser.FileContext ctx){
 		CFile file = new CFile(fileName);
 		file.main = (MainMethod)visit(ctx.main());
@@ -66,12 +68,18 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return file;
 	}
 
+	@Override
 	public OutputModelObject visitMain(JParser.MainContext ctx){
-		MainMethod mainMethod = new MainMethod();
+		FuncName funcName = new FuncName(ctx.scope);
+		MainMethod mainMethod = new MainMethod(funcName);
+		mainMethod.returnType = new PrimitiveTypeSpec("int");
+		mainMethod.args.add(new VarDef("argc", new PrimitiveTypeSpec("int")));
+		mainMethod.args.add(new VarDef("*argv[]",new PrimitiveTypeSpec("char")));
 		mainMethod.body = (Block)visit(ctx.block());
 		return mainMethod;
 	}
 
+	@Override
 	public OutputModelObject visitBlock(JParser.BlockContext ctx){
 		Block block = new Block();
 		for(JParser.StatementContext stat : ctx.statement()){
@@ -86,14 +94,17 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return block;
 	}
 
-
 	//visitLocalVarStat call the visitLocalVariable to visit this alternative's child/children
+	@Override
 	public OutputModelObject visitLocalVarStat(JParser.LocalVarStatContext ctx){
 		return visit(ctx.localVariableDeclaration());
 	}
+
+	@Override
 	public OutputModelObject visitLocalVariableDeclaration(JParser.LocalVariableDeclarationContext ctx){
 		String varname = ctx.ID().getText();
 		TypeSpec type = (TypeSpec) visit(ctx.jType());
+		System.out.println("lvdtype: "+type.name);
 		return new VarDef(varname,type);
 	}
 
@@ -102,7 +113,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		String typename;
 		if(ctx.ID()!= null){
 			typename = ctx.ID().getText();
-			//System.out.println("typename in visitJType:" +typename);
 			return new ObjectTypeSpec(typename);
 		}
 		else if(ctx.getText().equals("int")){
@@ -130,7 +140,15 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	@Override
 	public OutputModelObject visitIdRef(JParser.IdRefContext ctx) {
 		String varname = ctx.ID().getText();
-		return new VarRef(varname);
+		TypeSpec vartype;
+		if(ctx.type.getName().equals("int") ||ctx.type.getName().equals("float")|| ctx.type.getName().equals("float")){
+			vartype = new PrimitiveTypeSpec(ctx.type.getName());
+		}
+		else{
+			vartype = new ObjectTypeSpec(ctx.type.getName());
+		}
+
+		return new VarRef(varname,vartype);
 	}
 
 	@Override
@@ -220,14 +238,14 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 	@Override
 	public OutputModelObject visitFormalParameter(JParser.FormalParameterContext ctx) {
-			return new VarDef(ctx.ID().getText(), visit(ctx.jType()));
+			return new VarDef(ctx.ID().getText(), (TypeSpec) visit(ctx.jType()));
 	}
 
 
 	/*fileds decl in classdeclaration*/
 	@Override
 	public OutputModelObject visitFieldDeclaration(JParser.FieldDeclarationContext ctx) {
-		return new VarDef(ctx.ID().getText(), visit(ctx.jType()));
+		return new VarDef(ctx.ID().getText(), (TypeSpec) visit(ctx.jType()));
 	}
 
 	//	@Override

@@ -6,7 +6,10 @@ package cs652.j.codegen.model;
 public class VarRef extends OutputModelObject {
     public String name;
 
-    public VarRef(String varname){
+    public TypeSpec vartype;
+
+    public VarRef(String varname, TypeSpec vartype){
         this.name = varname;
+        this.vartype = vartype;
     }
 }

@@ -36,21 +36,22 @@ typedef struct {
 <if(methods)><methods:{m | <m>}; separator = "\n"><endif>
 
 void (*<class.Name>_vtable[])() = {
-    <vtable:{v | (void (*)())&<v>}; separator = "\n">
+    <vtable:{v | (void (*)())&<v>}; separator = ",">
 };
 
 metadata <class.Name>_metadata = {"<class.Name>", sizeof(<class.Name>), &<class.Name>_vtable};
 >>
 
 MethodDef(m,funcName,returnType,args,body) ::= <<
-<returnType> <funcName> (<if(args)><class.Name> *this, <args; separator=", "><else><class.Name> *this<endif>)
+<returnType> <funcName>(<if(args)><class.Name> *this, <args; separator=", "><else><class.Name> *this<endif>)
 {
     <body>
 }
 >>
 
 MainMethod(main,funcName,returnType,args,body) ::= <<
-int main(int argc, char *argv[]){
+<returnType> main(<args; separator=", ">)
+{
     <body>
     return 0;
 }
@@ -65,14 +66,14 @@ VarDef(var, type)   ::= "<type> <var.id>"
 
 FuncName(f)         ::= "<f.ClassName>_<f.MethodName>"
 
-ObjectTypeSpec(o)   ::= ""
+ObjectTypeSpec(o)   ::= "<o.name> *"
 PrimitiveTypeSpec(p)::= "<p.name>"
 
 AssignStat(a,left,right) ::= "<left> = <right>"
 PrintStringStat(p)  ::= "printf(<p.thestring>)"
 PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
 CallStat(c,call)    ::= ""
-CtorCall(ctor)      ::= "new <ctor.id>()"
+CtorCall(ctor)      ::= "((<ctor.id> *)alloc(&<ctor.id>_metadata))"
 ReturnStat(r,expr)  ::= ""
 WhileStat(w,condition, stat) ::= ""
 IfStat(i,condition, stat) ::= ""
@@ -82,7 +83,7 @@ IfElseStat(i,condition, stat, elseStat) ::= <<
 NullRef(n)          ::= "NULL"
 
 LiteralRef(lit)     ::= "<lit.literal>"
-VarRef(v)           ::= "<v.name>"
+VarRef(v)           ::= "<v.type><v.name>"
 FieldRef(f, object) ::= ""
 ThisRef(t)          ::= "this"
 MethodCall(m, receiver, receiverType, fptrType, args) ::= <<

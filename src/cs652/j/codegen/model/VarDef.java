@@ -7,9 +7,9 @@ public class VarDef extends OutputModelObject {
     public String id;
 
     @ModelElement
-    public OutputModelObject type;
+    public TypeSpec type;
 
-    public VarDef(String id, OutputModelObject type){
+    public VarDef(String id, TypeSpec type){
         this.id = id;
         this.type = type;
     }
