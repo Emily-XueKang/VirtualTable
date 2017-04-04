@@ -22,6 +22,6 @@ public class MethodDef extends OutputModelObject {
     public List<VarDef> args = new ArrayList<>();
 
     @ModelElement
-    public OutputModelObject body;
+    public Block body;
 
 }

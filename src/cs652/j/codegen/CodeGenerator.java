@@ -37,6 +37,7 @@ import sun.reflect.generics.tree.TypeSignature;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public STGroup templates;
@@ -168,7 +169,13 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		currentClass = ctx.scope;
 		ClassDef classDef = new ClassDef(currentClass);
 
-		//System.out.println(currentClass.getMethods());
+		Set<MethodSymbol> jMethods = currentClass.getMethods();
+		for(MethodSymbol jMethod : jMethods){
+			//System.out.println(jMethod.getSlotNumber());
+			FuncName fm = new FuncName((JMethod) jMethod);
+			System.out.println(fm.method.getName() + "slot:" +fm.method.getSlotNumber());
+			classDef.vtable.add(fm);
+		}
 
 		for(ParseTree child : ctx.classBody().children){
 			OutputModelObject omo = visit(child);
@@ -195,21 +202,27 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		else{
 			methodDef.returnType = new PrimitiveTypeSpec(ctx.scope.getType().getName());
 		}
-		for(JParser.FormalParameterContext fp : ctx.formalParameters().formalParameterList().formalParameter()){
-			OutputModelObject omo = visit(fp);
-			methodDef.args.add((VarDef) omo);
-			//System.out.println("parainfo:" + ((VarDef) omo).id);
-		}
 
-		methodDef.body = visit(ctx.methodBody());
+		if(ctx.formalParameters().formalParameterList()!=null){
+			for(ParseTree fp : ctx.formalParameters().formalParameterList().formalParameter()){
+				OutputModelObject omo = visit(fp);
+				methodDef.args.add((VarDef) omo);
+			}
+		}
+		methodDef.body = (Block) visit(ctx.methodBody());
 		return methodDef;
 	}
 
+	@Override
+	public OutputModelObject visitMethodBody(JParser.MethodBodyContext ctx) {
+		return visit(ctx.block());
+	}
 
 	@Override
 	public OutputModelObject visitFormalParameter(JParser.FormalParameterContext ctx) {
-		return new VarDef(ctx.ID().getText(), visit(ctx.jType()));
+			return new VarDef(ctx.ID().getText(), visit(ctx.jType()));
 	}
+
 
 	/*fileds decl in classdeclaration*/
 	@Override

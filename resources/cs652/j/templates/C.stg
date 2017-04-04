@@ -28,18 +28,22 @@ ClassDef(class, fields, methods, vtable) ::= <<
 typedef struct {
     metadata *clazz;
     <fields:{f | <f>;}; separator = "\n">
-    <methods:{m | <m>;}; separator = "\n">
 } <class.Name>;
 
+<if(methods)><vtable:{v | #define <v>_SLOT }; separator = "\n"><endif>
 
 
-<methods>
+<if(methods)><methods:{m | <m>}; separator = "\n"><endif>
+
+void (*<class.Name>_vtable[])() = {
+    <vtable:{v | (void (*)())&<v>}; separator = "\n">
+};
 
 metadata <class.Name>_metadata = {"<class.Name>", sizeof(<class.Name>), &<class.Name>_vtable};
 >>
 
 MethodDef(m,funcName,returnType,args,body) ::= <<
-<returnType> <funcName><args; separator=", ">)
+<returnType> <funcName> (<if(args)><class.Name> *this, <args; separator=", "><else><class.Name> *this<endif>)
 {
     <body>
 }
@@ -59,7 +63,7 @@ Block(block, locals, instrs) ::= <<
 
 VarDef(var, type)   ::= "<type> <var.id>"
 
-FuncName(f)         ::= "<f.ClassName>_<f.MethodName> (<f.ClassName> *this"
+FuncName(f)         ::= "<f.ClassName>_<f.MethodName>"
 
 ObjectTypeSpec(o)   ::= ""
 PrimitiveTypeSpec(p)::= "<p.name>"
