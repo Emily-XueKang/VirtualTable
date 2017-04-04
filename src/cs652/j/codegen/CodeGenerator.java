@@ -85,10 +85,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return block;
 	}
 
-	@Override
-	public OutputModelObject visitBlockStat(JParser.BlockStatContext ctx) {
-		return super.visitBlockStat(ctx);
-	}
 
 	//visitLocalVarStat call the visitLocalVariable to visit this alternative's child/children
 	public OutputModelObject visitLocalVarStat(JParser.LocalVarStatContext ctx){
@@ -172,14 +168,14 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		currentClass = ctx.scope;
 		ClassDef classDef = new ClassDef(currentClass);
 
-		System.out.println(currentClass.getName());
+		//System.out.println(currentClass.getMethods());
 
 		for(ParseTree child : ctx.classBody().children){
 			OutputModelObject omo = visit(child);
 			if(omo instanceof VarDef){
 				classDef.fields.add((VarDef) omo);
 			}
-			else{
+			else if(omo instanceof MethodDef){
 				// omo instance of MethodDef
 				classDef.methods.add((MethodDef) omo);
 			}
@@ -187,35 +183,32 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return classDef;
 	}
 
-//	@Override
-//	public OutputModelObject visitClassBody(JParser.ClassBodyContext ctx) {
-//
-//	}
-
-//	@Override
-//	public OutputModelObject visitClassBodyDeclaration(JParser.ClassBodyDeclarationContext ctx) {
-//		return super.visitClassBodyDeclaration(ctx);
-//	}
-
-
 	@Override
 	public OutputModelObject visitMethodDeclaration(JParser.MethodDeclarationContext ctx) {
 		FuncName funcName = new FuncName(ctx.scope);
-		String methodname = funcName.getMethodName();
-
-		//System.out.println("methodname: "+methodname);
-
-		String classname = funcName.getClassName();
-
-		//System.out.println("classname: " +classname);
 
 		MethodDef methodDef = new MethodDef(funcName);
 
-		//System.out.println("ctx.jtype: "+ctx.jType());
+		if(ctx.jType()!=null){
+			methodDef.returnType = (TypeSpec) visit(ctx.jType());
+		}
+		else{
+			methodDef.returnType = new PrimitiveTypeSpec(ctx.scope.getType().getName());
+		}
+		for(JParser.FormalParameterContext fp : ctx.formalParameters().formalParameterList().formalParameter()){
+			OutputModelObject omo = visit(fp);
+			methodDef.args.add((VarDef) omo);
+			//System.out.println("parainfo:" + ((VarDef) omo).id);
+		}
 
-		methodDef.returnType = (TypeSpec) visit(ctx.jType());
 		methodDef.body = visit(ctx.methodBody());
 		return methodDef;
+	}
+
+
+	@Override
+	public OutputModelObject visitFormalParameter(JParser.FormalParameterContext ctx) {
+		return new VarDef(ctx.ID().getText(), visit(ctx.jType()));
 	}
 
 	/*fileds decl in classdeclaration*/

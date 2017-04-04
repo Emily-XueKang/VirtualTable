@@ -54,7 +54,8 @@ public class ComputeTypes extends JBaseListener {
 	}
 
 	@Override
-	public void enterMethodDeclaration(JParser.MethodDeclarationContext ctx) {
+	public void enterMethodDeclaration(JParser.MethodDeclarationContext ctx)
+	{
 		currentScope = ctx.scope;
 	}
 

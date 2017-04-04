@@ -33,15 +33,16 @@ typedef struct {
 
 
 
-void (*<class.Name>_vtable[])() = {
-};
+<methods>
 
 metadata <class.Name>_metadata = {"<class.Name>", sizeof(<class.Name>), &<class.Name>_vtable};
 >>
 
 MethodDef(m,funcName,returnType,args,body) ::= <<
-<funcName>
-<returnType>
+<returnType> <funcName><args; separator=", ">)
+{
+    <body>
+}
 >>
 
 MainMethod(main,funcName,returnType,args,body) ::= <<
@@ -58,7 +59,7 @@ Block(block, locals, instrs) ::= <<
 
 VarDef(var, type)   ::= "<type> <var.id>"
 
-FuncName(f)         ::= ""
+FuncName(f)         ::= "<f.ClassName>_<f.MethodName> (<f.ClassName> *this"
 
 ObjectTypeSpec(o)   ::= ""
 PrimitiveTypeSpec(p)::= "<p.name>"

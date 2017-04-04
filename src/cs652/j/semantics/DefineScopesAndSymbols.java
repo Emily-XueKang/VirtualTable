@@ -89,7 +89,7 @@ public class DefineScopesAndSymbols extends JBaseListener {
 		currentScope.define(m);
 		currentScope = m;
 		currentScope.define(thisArg);
-		ctx.scope = (JMethod) currentScope;
+		ctx.scope = m;
 	}
 	@Override
 	public void exitMethodDeclaration(JParser.MethodDeclarationContext ctx) {

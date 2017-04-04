@@ -18,11 +18,10 @@ public class MethodDef extends OutputModelObject {
     public TypeSpec returnType;
 
 
-//    @ModelElement
-//    List<VarDef> formalparamters = new ArrayList<>();
+    @ModelElement
+    public List<VarDef> args = new ArrayList<>();
 
     @ModelElement
     public OutputModelObject body;
-
 
 }
