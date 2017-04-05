@@ -109,6 +109,16 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	}
 
 	@Override
+	public OutputModelObject visitCallStat(JParser.CallStatContext ctx) {
+		return visit(ctx.expression());
+	}
+
+	@Override
+	public OutputModelObject visitMethodCall(JParser.MethodCallContext ctx) {
+		return super.visitMethodCall(ctx);
+	}
+
+	@Override
 	public OutputModelObject visitJType(JParser.JTypeContext ctx) {
 		String typename;
 		if(ctx.ID()!= null){
@@ -189,9 +199,8 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 		Set<MethodSymbol> jMethods = currentClass.getMethods();
 		for(MethodSymbol jMethod : jMethods){
-			//System.out.println(jMethod.getSlotNumber());
-			FuncName fm = new FuncName((JMethod) jMethod);
-			System.out.println(fm.method.getName() + "slot:" +fm.method.getSlotNumber());
+			FuncName fm = new FuncName((JMethod)jMethod);
+			fm.slotNumber = fm.method.getSlotNumber();
 			classDef.vtable.add(fm);
 		}
 
