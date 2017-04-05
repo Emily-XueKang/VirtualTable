@@ -150,7 +150,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 			}
 		}
 		methodCall.fptrType = fpt;
-		methodCall.receiver = (VarRef) receiver;
+		methodCall.receiver = receiver;
 		methodCall.receiverType = receiverType;
 		return methodCall;
 	}
@@ -158,8 +158,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	@Override
 	public OutputModelObject visitThisRef(JParser.ThisRefContext ctx) {
 		TypeSpec thisType = new ObjectTypeSpec(ctx.type.getName());
-		//return new VarRef("this", thisType);
-		return thisType;
+		return new ThisRef("this", thisType);
 	}
 
 	@Override

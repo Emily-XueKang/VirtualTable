@@ -11,7 +11,7 @@ public class MethodCall extends Expr {
     public String name;
 
     @ModelElement
-    public VarRef receiver;
+    public Expr receiver;
 
     @ModelElement
     public TypeSpec receiverType;

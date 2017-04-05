@@ -9,6 +9,5 @@ public class CtorCall extends Expr{
     public CtorCall(String id, ObjectTypeSpec type ){
         this.id = id;
         this.type = type;
-
     }
 }
