@@ -104,7 +104,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public OutputModelObject visitLocalVariableDeclaration(JParser.LocalVariableDeclarationContext ctx){
 		String varname = ctx.ID().getText();
 		TypeSpec type = (TypeSpec) visit(ctx.jType());
-		System.out.println("lvdtype: "+type.name);
 		return new VarDef(varname,type);
 	}
 
@@ -119,32 +118,35 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		TypeSpec returnType = new PrimitiveTypeSpec(ctx.type.getName());
 		FuncPtrType fpt = new FuncPtrType(returnType);
 
-		MethodCall methodCall = new MethodCall();
-		methodCall.name = ctx.ID().getText();
+		String methodname = ctx.ID().getText();
+		MethodCall methodCall = new MethodCall(methodname);
+
 
 		TypeSpec receiverType = receiver.vartype;
-		String receiverName = receiver.name;
+		//String receiverName = receiver.name;
 
-		TypeCast implicit = new TypeCast(receiverName,receiverType);
-		methodCall.agrs.add(implicit);
+		TypeCast implicit = new TypeCast(receiver,receiverType);
+		methodCall.args.add(implicit);
+		fpt.argTypes.add(implicit.type);
 		for(ParseTree a : ctx.expressionList().expression()){
 			OutputModelObject vr = visit(a);
 			TypeCast tc;
 			if(vr instanceof LiteralRef){
-				tc = new TypeCast(((LiteralRef) vr).literal,null);
+				//tc = new TypeCast(((LiteralRef) vr).literal,null);
+				tc = new TypeCast((Expr) vr,null);
 				fpt.argTypes.add(((LiteralRef) vr).type);
-				methodCall.agrs.add(tc);
+				methodCall.args.add(tc);
 			}
 			else if(vr instanceof VarRef){
-				tc = new TypeCast(((VarRef) vr).name,((VarRef) vr).vartype);
+				tc = new TypeCast(((VarRef) vr),((VarRef) vr).vartype);
 				fpt.argTypes.add(((VarRef) vr).vartype);
-				methodCall.agrs.add(tc);
+				methodCall.args.add(tc);
 			}
 			else if(vr instanceof CtorCall){
 				TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
-				tc = new TypeCast(((CtorCall) vr).id, ctorType);
+				tc = new TypeCast((CtorCall) vr, ctorType);
 				fpt.argTypes.add(((CtorCall) vr).type);
-				methodCall.agrs.add(tc);
+				methodCall.args.add(tc);
 			}
 		}
 		methodCall.fptrType = fpt;

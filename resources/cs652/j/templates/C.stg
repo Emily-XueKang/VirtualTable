@@ -71,7 +71,7 @@ PrimitiveTypeSpec(p)::= "<p.name>"
 AssignStat(a,left,right) ::= "<left> = <right>"
 PrintStringStat(p)  ::= "printf(<p.thestring>)"
 PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
-CallStat(c,call)    ::= ""
+CallStat(c,call)    ::= "<call>"
 CtorCall(ctor)      ::= "((<ctor.id> *)alloc(&<ctor.id>_metadata))"
 ReturnStat(r,expr)  ::= ""
 WhileStat(w,condition, stat) ::= ""
@@ -86,8 +86,8 @@ VarRef(v)           ::= "<v.type><v.name>"
 FieldRef(f, object) ::= ""
 ThisRef(t)          ::= "this"
 MethodCall(m, receiver, receiverType, fptrType, args) ::= <<
-(*<fptrType>(*(<m.receiver.name>)->clazz->_vtable)[<receiverType>_<m.name>_SLOT])(<args; separator=",">);
+(*<fptrType>(*(<m.receiver.name>)->clazz->_vtable)[<m.receiverType.name>_<m.name>_SLOT])(<args; separator=",">)
 >>
 
-FuncPtrType(f, returnType, argTypes) ::= "<returnType> <argTypes>"
-TypeCast(cast, type, expr) ::= "((<type> *)<expr>)"
+FuncPtrType(f, returnType, argTypes) ::= "(<returnType> (*)(<argTypes; separator=\",\">))"
+TypeCast(cast, type, expr) ::= "<if(type)>((<type>)<expr>)<else><expr><endif>"

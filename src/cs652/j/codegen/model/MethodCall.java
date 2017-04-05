@@ -20,7 +20,11 @@ public class MethodCall extends OutputModelObject {
     public FuncPtrType fptrType;
 
     @ModelElement
-    public List<TypeCast> agrs = new ArrayList<>();
+    public List<TypeCast> args = new ArrayList<>();
+
+    public MethodCall(String name){
+        this.name = name;
+    }
 
 
 }
