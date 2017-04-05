@@ -114,8 +114,50 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	}
 
 	@Override
-	public OutputModelObject visitMethodCall(JParser.MethodCallContext ctx) {
-		return super.visitMethodCall(ctx);
+	public OutputModelObject visitQMethodCall(JParser.QMethodCallContext ctx) {
+		VarRef receiver = (VarRef) visit(ctx.expression());
+		TypeSpec returnType = new PrimitiveTypeSpec(ctx.type.getName());
+		FuncPtrType fpt = new FuncPtrType(returnType);
+
+		MethodCall methodCall = new MethodCall();
+		methodCall.name = ctx.ID().getText();
+
+		TypeSpec receiverType = receiver.vartype;
+		String receiverName = receiver.name;
+
+		TypeCast implicit = new TypeCast(receiverName,receiverType);
+		methodCall.agrs.add(implicit);
+		for(ParseTree a : ctx.expressionList().expression()){
+			OutputModelObject vr = visit(a);
+			TypeCast tc;
+			if(vr instanceof LiteralRef){
+				tc = new TypeCast(((LiteralRef) vr).literal,null);
+				fpt.argTypes.add(((LiteralRef) vr).type);
+				methodCall.agrs.add(tc);
+			}
+			else if(vr instanceof VarRef){
+				tc = new TypeCast(((VarRef) vr).name,((VarRef) vr).vartype);
+				fpt.argTypes.add(((VarRef) vr).vartype);
+				methodCall.agrs.add(tc);
+			}
+			else if(vr instanceof CtorCall){
+				TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
+				tc = new TypeCast(((CtorCall) vr).id, ctorType);
+				fpt.argTypes.add(((CtorCall) vr).type);
+				methodCall.agrs.add(tc);
+			}
+		}
+		methodCall.fptrType = fpt;
+		methodCall.receiver = receiver;
+		methodCall.receiverType = receiverType;
+		return methodCall;
+	}
+
+	@Override
+	public OutputModelObject visitThisRef(JParser.ThisRefContext ctx) {
+		TypeSpec thisType = new ObjectTypeSpec(ctx.type.getName());
+		//return new VarRef("this", thisType);
+		return thisType;
 	}
 
 	@Override
@@ -163,18 +205,20 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 	@Override
 	public OutputModelObject visitLiteralRef(JParser.LiteralRefContext ctx) {
+		PrimitiveTypeSpec lt = new PrimitiveTypeSpec(ctx.type.getName());
 		if(ctx.INT() != null){
-			return new LiteralRef(ctx.INT().getText());
+			return new LiteralRef(ctx.INT().getText(),lt);
 		}
 		else{
-			return new LiteralRef(ctx.FLOAT().getText());
+			return new LiteralRef(ctx.FLOAT().getText(),lt);
 		}
 	}
 
 	@Override
 	public OutputModelObject visitCtorCall(JParser.CtorCallContext ctx) {
 		String ctorid = ctx.ID().getText();
-		return new CtorCall(ctorid);
+		ObjectTypeSpec ctortype = new ObjectTypeSpec(ctx.type.getName());
+		return new CtorCall(ctorid, ctortype);
 	}
 
 	@Override

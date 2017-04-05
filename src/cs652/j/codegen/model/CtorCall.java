@@ -5,7 +5,10 @@ package cs652.j.codegen.model;
  */
 public class CtorCall extends OutputModelObject{
     public String id;
-    public CtorCall(String id){
+    public ObjectTypeSpec type;
+    public CtorCall(String id, ObjectTypeSpec type ){
         this.id = id;
+        this.type = type;
+
     }
 }

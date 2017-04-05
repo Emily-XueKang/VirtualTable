@@ -6,9 +6,11 @@ package cs652.j.codegen.model;
  */
 public class LiteralRef extends OutputModelObject {
     public String literal;
+    public TypeSpec type;
 
-    public LiteralRef(String literal){
+    public LiteralRef(String literal, TypeSpec literaltype){
         this.literal = literal;
-    };
+        this.type = literaltype;
+    }
 
 }

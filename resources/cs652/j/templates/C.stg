@@ -86,7 +86,8 @@ VarRef(v)           ::= "<v.type><v.name>"
 FieldRef(f, object) ::= ""
 ThisRef(t)          ::= "this"
 MethodCall(m, receiver, receiverType, fptrType, args) ::= <<
+(*<fptrType>(*(<m.receiver.name>)->clazz->_vtable)[<receiverType>_<m.name>_SLOT])(<args; separator=",">);
 >>
 
-FuncPtrType(f, returnType, argTypes) ::= ""
-TypeCast(cast, type, expr) ::= ""
+FuncPtrType(f, returnType, argTypes) ::= "<returnType> <argTypes>"
+TypeCast(cast, type, expr) ::= "((<type> *)<expr>)"

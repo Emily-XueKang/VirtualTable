@@ -17,7 +17,6 @@ public class MethodDef extends OutputModelObject {
     @ModelElement
     public TypeSpec returnType;
 
-    public int slotNumber;
 
     @ModelElement
     public List<VarDef> args = new ArrayList<>();
