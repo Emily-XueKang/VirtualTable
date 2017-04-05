@@ -10,12 +10,12 @@ public class PrintStat extends Stat {
     public String format;
 
     @ModelElement
-    public List<OutputModelObject> args = new ArrayList<>();
+    public List<Expr> args = new ArrayList<>();
 
     public PrintStat(String format){
         this.format = format;
     }
-    public void addArg(OutputModelObject arg){
+    public void addArg(Expr arg){
         args.add(arg);
     }
 }

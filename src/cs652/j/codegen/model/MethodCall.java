@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * Created by xuekang on 4/4/17.
  */
-public class MethodCall extends OutputModelObject {
+public class MethodCall extends Expr {
     //receiver, receiverType, fptrType, args
     public String name;
 

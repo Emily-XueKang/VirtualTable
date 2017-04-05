@@ -121,36 +121,36 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		String methodname = ctx.ID().getText();
 		MethodCall methodCall = new MethodCall(methodname);
 
-
 		TypeSpec receiverType = receiver.vartype;
-		//String receiverName = receiver.name;
 
 		TypeCast implicit = new TypeCast(receiver,receiverType);
 		methodCall.args.add(implicit);
 		fpt.argTypes.add(implicit.type);
-		for(ParseTree a : ctx.expressionList().expression()){
-			OutputModelObject vr = visit(a);
-			TypeCast tc;
-			if(vr instanceof LiteralRef){
-				//tc = new TypeCast(((LiteralRef) vr).literal,null);
-				tc = new TypeCast((Expr) vr,null);
-				fpt.argTypes.add(((LiteralRef) vr).type);
-				methodCall.args.add(tc);
-			}
-			else if(vr instanceof VarRef){
-				tc = new TypeCast(((VarRef) vr),((VarRef) vr).vartype);
-				fpt.argTypes.add(((VarRef) vr).vartype);
-				methodCall.args.add(tc);
-			}
-			else if(vr instanceof CtorCall){
-				TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
-				tc = new TypeCast((CtorCall) vr, ctorType);
-				fpt.argTypes.add(((CtorCall) vr).type);
-				methodCall.args.add(tc);
+		if(ctx.expressionList()!=null){
+			for(ParseTree a : ctx.expressionList().expression()){
+				OutputModelObject vr = visit(a);
+				TypeCast tc;
+				if(vr instanceof LiteralRef){
+					//tc = new TypeCast(((LiteralRef) vr).literal,null);
+					tc = new TypeCast((Expr) vr,null);
+					fpt.argTypes.add(((LiteralRef) vr).type);
+					methodCall.args.add(tc);
+				}
+				else if(vr instanceof VarRef){
+					tc = new TypeCast(((VarRef) vr),((VarRef) vr).vartype);
+					fpt.argTypes.add(((VarRef) vr).vartype);
+					methodCall.args.add(tc);
+				}
+				else if(vr instanceof CtorCall){
+					TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
+					tc = new TypeCast((CtorCall) vr, ctorType);
+					fpt.argTypes.add(((CtorCall) vr).type);
+					methodCall.args.add(tc);
+				}
 			}
 		}
 		methodCall.fptrType = fpt;
-		methodCall.receiver = receiver;
+		methodCall.receiver = (VarRef) receiver;
 		methodCall.receiverType = receiverType;
 		return methodCall;
 	}
@@ -160,6 +160,29 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		TypeSpec thisType = new ObjectTypeSpec(ctx.type.getName());
 		//return new VarRef("this", thisType);
 		return thisType;
+	}
+
+	@Override
+	public OutputModelObject visitReturnStat(JParser.ReturnStatContext ctx) {
+		return new ReturnStat((Expr) visit(ctx.expression()));
+	}
+
+	@Override
+	public OutputModelObject visitIfStat(JParser.IfStatContext ctx) {
+		Expr condition = (Expr) visit(ctx.parExpression());
+		String cond = ctx.parExpression().getText();
+		if(ctx.statement(1)==null){
+			IfStat ifStat = new IfStat(cond,condition);
+			ifStat.stat = (Stat) visit(ctx.statement(0));
+			return ifStat;
+		}
+		else if(ctx.statement(1)!=null){
+			IfElseStat ifElseStat = new IfElseStat(cond, condition);
+			ifElseStat.stat = (Stat) visit(ctx.statement(0));
+			ifElseStat.elseStat = (Stat) visit(ctx.statement(1));
+			return ifElseStat;
+		}
+		else return null;
 	}
 
 	@Override
@@ -185,7 +208,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 	@Override
 	public OutputModelObject visitAssignStat(JParser.AssignStatContext ctx) {
-		VarRef leftvar = (VarRef) visit(ctx.expression(0));
+		Expr leftvar = (Expr) visit(ctx.expression(0));
 		OutputModelObject rightvar = visit(ctx.expression(1));
 		AssignStat assignStat = new AssignStat(leftvar,rightvar);
 		return assignStat;
@@ -217,6 +240,12 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	}
 
 	@Override
+	public OutputModelObject visitFieldRef(JParser.FieldRefContext ctx) {
+		String name = ctx.ID().getText();
+		return new FieldRef(name, (Expr) visit(ctx.expression()));
+	}
+
+	@Override
 	public OutputModelObject visitCtorCall(JParser.CtorCallContext ctx) {
 		String ctorid = ctx.ID().getText();
 		ObjectTypeSpec ctortype = new ObjectTypeSpec(ctx.type.getName());
@@ -227,9 +256,10 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public OutputModelObject visitPrintStat(JParser.PrintStatContext ctx) {
 		PrintStat printStat = new PrintStat(ctx.STRING().getText());
 		for(JParser.ExpressionContext arg : ctx.expressionList().expression()){
-			OutputModelObject a = visit(arg);
+			Expr a = (Expr) visit(arg);
 			printStat.addArg(a);
 		}
+
 		return printStat;
 	}
 

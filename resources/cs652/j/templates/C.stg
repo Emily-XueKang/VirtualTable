@@ -73,17 +73,19 @@ PrintStringStat(p)  ::= "printf(<p.thestring>)"
 PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
 CallStat(c,call)    ::= "<call>"
 CtorCall(ctor)      ::= "((<ctor.id> *)alloc(&<ctor.id>_metadata))"
-ReturnStat(r,expr)  ::= ""
+ReturnStat(r,expr)  ::= "return <expr>"
 WhileStat(w,condition, stat) ::= ""
-IfStat(i,condition, stat) ::= ""
+IfStat(i,condition, stat) ::= "if <i.cond> <stat>"
 IfElseStat(i,condition, stat, elseStat) ::= <<
+if <i.cond> <stat>;
+else <elseStat>
 >>
 
 NullRef(n)          ::= "NULL"
 
 LiteralRef(lit)     ::= "<lit.literal>"
 VarRef(v)           ::= "<v.type><v.name>"
-FieldRef(f, object) ::= ""
+FieldRef(f, object) ::= "<object>-><f.name>"
 ThisRef(t)          ::= "this"
 MethodCall(m, receiver, receiverType, fptrType, args) ::= <<
 (*<fptrType>(*(<m.receiver.name>)->clazz->_vtable)[<m.receiverType.name>_<m.name>_SLOT])(<args; separator=",">)
