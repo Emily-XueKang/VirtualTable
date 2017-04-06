@@ -9,8 +9,7 @@ public class FieldRef extends Expr {
 
     public String name;
 
-    public FieldRef(String name, Expr object){
+    public FieldRef(String name){
         this.name = name;
-        this.object = object;
     }
 }

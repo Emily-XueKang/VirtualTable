@@ -371,7 +371,15 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	@Override
 	public OutputModelObject visitFieldRef(JParser.FieldRefContext ctx) {
 		String name = ctx.ID().getText();
-		return new FieldRef(name, (Expr) visit(ctx.expression()));
+		FieldRef fieldRef = new FieldRef(name);
+		if(visit(ctx.expression())instanceof VarRef){
+			fieldRef.object = (VarRef)visit(ctx.expression());
+		}
+		else if(visit(ctx.expression()) instanceof ThisRef)
+			fieldRef.object = new ThisRef("this",new ObjectTypeSpec(ctx.expression().type.getName()));
+		else
+			fieldRef.object = (FieldRef) visit(ctx.expression());
+		return fieldRef;
 	}
 
 	@Override
