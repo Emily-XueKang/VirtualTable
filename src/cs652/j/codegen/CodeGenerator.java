@@ -197,12 +197,16 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		String receiverclass = funcName.getClassName();
 		ObjectTypeSpec receiverType= new ObjectTypeSpec(receiverclass);
 
-		receiver = new VarRef(ctx.type.getName(), receiverType);
+		receiver = new VarRef("this", receiverType);
+
 		TypeCast implicit = new TypeCast(receiver,receiverType);
 
 		FuncPtrType fpt = new FuncPtrType(returnType);
+		methodCall.fptrType = fpt;
 		methodCall.args.add(implicit);
 		fpt.argTypes.add(implicit.type);
+		methodCall.receiver = receiver;
+		methodCall.receiverType = receiverType;
 		return methodCall;
 	}
 
