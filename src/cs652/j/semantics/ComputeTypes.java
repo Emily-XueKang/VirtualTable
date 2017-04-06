@@ -8,6 +8,7 @@ import org.antlr.symtab.*;
 public class ComputeTypes extends JBaseListener {
 	protected StringBuilder buf = new StringBuilder();
 	//Scope currentScope;
+	public GlobalScope globalScope;
 
 	public static final Type JINT_TYPE = new JPrimitiveType("int");
 	public static final Type JFLOAT_TYPE = new JPrimitiveType("float");
@@ -16,11 +17,13 @@ public class ComputeTypes extends JBaseListener {
 
 
 	public Scope currentScope;
-	public ClassDef currentClass;
+	//public ClassDef currentClass;
 
 	public ComputeTypes(GlobalScope globals)
 	{
 		//this.currentScope = globals;
+		this.currentScope = globals;
+		globalScope = globals;
 	}
 
 	/**
@@ -34,13 +37,25 @@ public class ComputeTypes extends JBaseListener {
 	}
 
 	@Override
-	public void enterFile(JParser.FileContext ctx) {
+	public void enterFile(JParser.FileContext ctx)
+	{
 		currentScope = ctx.scope;
 	}
 
 	@Override
-	public void enterMain(JParser.MainContext ctx) {
+	public void exitFile(JParser.FileContext ctx) {
+		currentScope = currentScope.getEnclosingScope();
+	}
+
+	@Override
+	public void enterMain(JParser.MainContext ctx)
+	{
 		currentScope = ctx.scope;
+	}
+
+	@Override
+	public void exitMain(JParser.MainContext ctx) {
+		currentScope = currentScope.getEnclosingScope();
 	}
 
 	@Override
@@ -49,8 +64,18 @@ public class ComputeTypes extends JBaseListener {
 	}
 
 	@Override
+	public void exitBlock(JParser.BlockContext ctx) {
+		currentScope = currentScope.getEnclosingScope();
+	}
+
+	@Override
 	public void enterClassDeclaration(JParser.ClassDeclarationContext ctx) {
 		currentScope = ctx.scope;
+	}
+
+	@Override
+	public void exitClassDeclaration(JParser.ClassDeclarationContext ctx) {
+		currentScope = currentScope.getEnclosingScope();
 	}
 
 	@Override
@@ -59,6 +84,10 @@ public class ComputeTypes extends JBaseListener {
 		currentScope = ctx.scope;
 	}
 
+	@Override
+	public void exitMethodDeclaration(JParser.MethodDeclarationContext ctx) {
+		currentScope = currentScope.getEnclosingScope();
+	}
 
 	@Override
 	public void exitFieldRef(JParser.FieldRefContext ctx) {
@@ -136,6 +165,7 @@ public class ComputeTypes extends JBaseListener {
 		}
 		appendOutput(buf,ctx.getText(),ctx.type.getName());
 	}
+
 
 	public String getRefOutput() {
 		return buf.toString();

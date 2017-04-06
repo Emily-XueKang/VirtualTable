@@ -22,7 +22,6 @@ public class ClassDef extends OutputModelObject {
 
     public ClassDef(JClass clazz){
         this.clazz = clazz;
-        clazz.getMethods();
     }
 
     public String getName(){

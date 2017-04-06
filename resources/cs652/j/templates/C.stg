@@ -35,14 +35,14 @@ typedef struct {
 <if(methods)><methods:{m | <m>}; separator = "\n"><endif>
 
 void (*<class.Name>_vtable[])() = {
-    <vtable:{v | (void (*)())&<v>}; separator = ",">
+    <vtable:{v | (void (*)())&<v>}; separator = ",\n">
 };
 
 metadata <class.Name>_metadata = {"<class.Name>", sizeof(<class.Name>), &<class.Name>_vtable};
 >>
 
 MethodDef(m,funcName,returnType,args,body) ::= <<
-<returnType> <funcName>(<if(args)><class.Name> *this, <args; separator=", "><else><class.Name> *this<endif>)
+<returnType> <funcName>(<if(args)><class.Name> *this, <args; separator=","><else><class.Name> *this<endif>)
 {
     <body>
 }
@@ -58,7 +58,7 @@ MainMethod(main,funcName,returnType,args,body) ::= <<
 
 Block(block, locals, instrs) ::= <<
 <locals:{lo | <lo>;}; separator = "\n">
-<instrs:{in | <in>;}; separator = "\n">
+<instrs:{in | <in>;};separator = "\n">
 >>
 
 VarDef(var, type)   ::= "<type> <var.id>"
@@ -74,7 +74,7 @@ PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
 CallStat(c,call)    ::= "<call>"
 CtorCall(ctor)      ::= "((<ctor.id> *)alloc(&<ctor.id>_metadata))"
 ReturnStat(r,expr)  ::= "return <expr>"
-WhileStat(w,condition, stat) ::= ""
+WhileStat(w,condition, stat) ::= "while <w.cond> {<stat>}"
 IfStat(i,condition, stat) ::= "if <i.cond> <stat>"
 IfElseStat(i,condition, stat, elseStat) ::= <<
 if <i.cond> <stat>;

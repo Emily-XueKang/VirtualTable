@@ -27,7 +27,9 @@ import cs652.j.parser.JBaseVisitor;
 import cs652.j.parser.JParser;
 import cs652.j.semantics.JClass;
 //import cs652.j.semantics.JField;
+import cs652.j.semantics.JField;
 import cs652.j.semantics.JMethod;
+import cs652.j.semantics.JPrimitiveType;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.symtab.*;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -47,25 +49,133 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public Scope currentScope;
 	public JClass currentClass;
 
+	public CFile cFile;
+
 	public CodeGenerator(String fileName) {
 		this.fileName = fileName;
 		templates = new STGroupFile("cs652/j/templates/C.stg");
 	}
 
 	public CFile generate(ParserRuleContext tree) {
-		CFile file = (CFile)visit(tree);
-		return file;
+		cFile = (CFile)visit(tree);
+		return cFile;
 	}
 
 	@Override
 	public OutputModelObject visitFile(JParser.FileContext ctx){
-		CFile file = new CFile(fileName);
-		file.main = (MainMethod)visit(ctx.main());
+		currentScope = ctx.scope;
+		cFile = new CFile(fileName);
+		cFile.main = (MainMethod)visit(ctx.main());
 		for(JParser.ClassDeclarationContext classDef : ctx.classDeclaration()){
 			OutputModelObject a = visit(classDef);
-			file.addClass((ClassDef) a);
+			cFile.addClass((ClassDef) a);
 		}
-		return file;
+		currentScope = currentScope.getEnclosingScope();
+		return cFile;
+	}
+
+	@Override
+	public OutputModelObject visitClassDeclaration(JParser.ClassDeclarationContext ctx) {
+		currentScope = ctx.scope;
+		currentClass = ctx.scope;
+		ClassDef classDef = new ClassDef(currentClass);
+
+		System.out.println("ctx.scope:" + ctx.scope);
+		System.out.println("currentfield: "+ ctx.scope.getFields());
+
+		for(FieldSymbol sc : ctx.scope.getFields()){
+			String varname = sc.getName();
+			TypeSpec vartype;
+			if(sc.getType() instanceof JPrimitiveType){
+				vartype = new PrimitiveTypeSpec(sc.getType().getName());
+			}
+			else{
+				vartype = new ObjectTypeSpec(sc.getType().getName());
+			}
+			classDef.fields.add((new VarDef(varname,vartype)));
+		}
+
+//		if(currentClass.getSuperClassScope() != null) {
+//			System.out.println("super field:" +currentClass.getSuperClassScope().getDefinedFields());
+//			for(FieldSymbol sc : currentClass.getSuperClassScope().getFields()){
+//				String varname = sc.getName();
+//				TypeSpec vartype;
+//				if(sc.getType() instanceof JPrimitiveType){
+//					vartype = new PrimitiveTypeSpec(sc.getType().getName());
+//				}
+//				else{
+//					vartype = new ObjectTypeSpec(sc.getType().getName());
+//				}
+//				System.out.println("addfield: " + varname);
+//				classDef.fields.add((new VarDef(varname,vartype)));
+//			}
+//		}
+
+		Set<MethodSymbol> jMethods = currentClass.getMethods();
+		for(MethodSymbol jMethod : jMethods){
+			FuncName fm = new FuncName((JMethod)jMethod);
+			fm.slotNumber = fm.method.getSlotNumber();
+			classDef.vtable.add(fm);
+		}
+
+		for(ParseTree child : ctx.classBody().children){
+			OutputModelObject omo = visit(child);
+			if(omo instanceof VarDef){
+				classDef.fields.add((VarDef) omo);
+			}
+			else if(omo instanceof MethodDef){
+				// omo instance of MethodDef
+				classDef.methods.add((MethodDef) omo);
+			}
+		}
+
+
+		currentScope = currentScope.getEnclosingScope();
+//		System.out.println("returnclass fields: "+classDef.fields);
+//		List<VarDef> superFields = new ArrayList<>();
+//		for(VarDef sf: classDef.fields){
+//			superFields.add(sf);
+//		}
+		return classDef;
+	}
+
+	/*fileds decl in classdeclaration*/
+	@Override
+	public OutputModelObject visitFieldDeclaration(JParser.FieldDeclarationContext ctx) {
+		return new VarDef(ctx.ID().getText(), (TypeSpec) visit(ctx.jType()));
+	}
+
+	@Override
+	public OutputModelObject visitMethodDeclaration(JParser.MethodDeclarationContext ctx) {
+		currentScope = ctx.scope;
+		FuncName funcName = new FuncName(ctx.scope);
+		MethodDef methodDef = new MethodDef(funcName);
+		if(ctx.jType()!=null){
+			methodDef.returnType = (TypeSpec) visit(ctx.jType());
+		}
+		else{
+			methodDef.returnType = new PrimitiveTypeSpec(ctx.scope.getType().getName());
+		}
+
+		if(ctx.formalParameters().formalParameterList()!=null){
+			for(ParseTree fp : ctx.formalParameters().formalParameterList().formalParameter()){
+				OutputModelObject omo = visit(fp);
+				methodDef.args.add((VarDef) omo);
+			}
+		}
+		methodDef.body = (Block) visit(ctx.methodBody());
+		currentScope = currentScope.getEnclosingScope();
+		return methodDef;
+	}
+
+	@Override
+	public OutputModelObject visitMethodBody(JParser.MethodBodyContext ctx) {
+		return visit(ctx.block());
+	}
+
+	@Override
+	public OutputModelObject visitFormalParameter(JParser.FormalParameterContext ctx) {
+		return new VarDef(ctx.ID().getText(), (TypeSpec) visit(ctx.jType()));
 	}
 
 	@Override
@@ -80,7 +190,13 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	}
 
 	@Override
+	public OutputModelObject visitBlockStat(JParser.BlockStatContext ctx) {
+		return visit(ctx.block());
+	}
+
+	@Override
 	public OutputModelObject visitBlock(JParser.BlockContext ctx){
+		currentScope = ctx.scope;
 		Block block = new Block();
 		for(JParser.StatementContext stat : ctx.statement()){
 			OutputModelObject omo = visit(stat);
@@ -91,6 +207,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 				block.instrs.add(omo);
 			}
 		}
+		currentScope = currentScope.getEnclosingScope();
 		return block;
 	}
 
@@ -109,7 +226,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 	@Override
 	public OutputModelObject visitCallStat(JParser.CallStatContext ctx) {
-		return visit(ctx.expression());
+		return new CallStat(visit(ctx.expression()));
 	}
 
 	@Override
@@ -185,6 +302,15 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	}
 
 	@Override
+	public OutputModelObject visitWhileStat(JParser.WhileStatContext ctx) {
+		Expr condition = (Expr) visit(ctx.parExpression());
+		String cond = ctx.parExpression().getText();
+		WhileStat whileStat = new WhileStat(cond,condition);
+		whileStat.stat = (Block) visit(ctx.statement());
+		return whileStat;
+	}
+
+	@Override
 	public OutputModelObject visitJType(JParser.JTypeContext ctx) {
 		String typename;
 		if(ctx.ID()!= null){
@@ -216,6 +342,10 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	@Override
 	public OutputModelObject visitIdRef(JParser.IdRefContext ctx) {
 		String varname = ctx.ID().getText();
+		Symbol var = currentScope.resolve(varname);
+		if(var instanceof JField){
+			varname = "this->" + varname;
+		}
 		TypeSpec vartype;
 		if(ctx.type.getName().equals("int") ||ctx.type.getName().equals("float")|| ctx.type.getName().equals("float")){
 			vartype = new PrimitiveTypeSpec(ctx.type.getName());
@@ -258,7 +388,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 			Expr a = (Expr) visit(arg);
 			printStat.addArg(a);
 		}
-
 		return printStat;
 	}
 
@@ -267,77 +396,5 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return new PrintStringStat(ctx.STRING().getText());
 	}
 
-	@Override
-	public OutputModelObject visitClassDeclaration(JParser.ClassDeclarationContext ctx) {
-		currentClass = ctx.scope;
-		ClassDef classDef = new ClassDef(currentClass);
 
-		Set<MethodSymbol> jMethods = currentClass.getMethods();
-		for(MethodSymbol jMethod : jMethods){
-			FuncName fm = new FuncName((JMethod)jMethod);
-			fm.slotNumber = fm.method.getSlotNumber();
-			classDef.vtable.add(fm);
-		}
-
-		for(ParseTree child : ctx.classBody().children){
-			OutputModelObject omo = visit(child);
-			if(omo instanceof VarDef){
-				classDef.fields.add((VarDef) omo);
-			}
-			else if(omo instanceof MethodDef){
-				// omo instance of MethodDef
-				classDef.methods.add((MethodDef) omo);
-			}
-		}
-		return classDef;
-	}
-
-	@Override
-	public OutputModelObject visitMethodDeclaration(JParser.MethodDeclarationContext ctx) {
-		FuncName funcName = new FuncName(ctx.scope);
-
-		MethodDef methodDef = new MethodDef(funcName);
-
-		if(ctx.jType()!=null){
-			methodDef.returnType = (TypeSpec) visit(ctx.jType());
-		}
-		else{
-			methodDef.returnType = new PrimitiveTypeSpec(ctx.scope.getType().getName());
-		}
-
-		if(ctx.formalParameters().formalParameterList()!=null){
-			for(ParseTree fp : ctx.formalParameters().formalParameterList().formalParameter()){
-				OutputModelObject omo = visit(fp);
-				methodDef.args.add((VarDef) omo);
-			}
-		}
-		methodDef.body = (Block) visit(ctx.methodBody());
-		return methodDef;
-	}
-
-	@Override
-	public OutputModelObject visitMethodBody(JParser.MethodBodyContext ctx) {
-		return visit(ctx.block());
-	}
-
-	@Override
-	public OutputModelObject visitFormalParameter(JParser.FormalParameterContext ctx) {
-			return new VarDef(ctx.ID().getText(), (TypeSpec) visit(ctx.jType()));
-	}
-
-
-	/*fileds decl in classdeclaration*/
-	@Override
-	public OutputModelObject visitFieldDeclaration(JParser.FieldDeclarationContext ctx) {
-		return new VarDef(ctx.ID().getText(), (TypeSpec) visit(ctx.jType()));
-	}
-
-	//	@Override
-//	public OutputModelObject visitExpressionList(JParser.ExpressionListContext ctx) {
-//		ArrayList<OutputModelObject> exprlist = new ArrayList<>();
-//		for(JParser.ExpressionContext expr : ctx.expression()){
-//			exprlist.add(visit(expr));
-//		}
-//		return ;
-//	}
 }

@@ -16,15 +16,15 @@ public class JClass extends ClassSymbol {
 		super(name);
 		setDefNode(tree);
 	}
-	public ClassSymbol getSuperClassScope() {
-		if ( superClassName!=null ) {
-			if ( getEnclosingScope()!=null ) {
-				Symbol superClass = getEnclosingScope().resolve(superClassName);
-				if ( superClass instanceof ClassSymbol ) {
-					return (ClassSymbol)superClass;
-				}
-			}
-		}
-		return null;
-	}
+//	public ClassSymbol getSuperClassScope() {
+//		if ( superClassName!=null ) {
+//			if ( getEnclosingScope()!=null ) {
+//				Symbol superClass = getEnclosingScope().resolve(superClassName);
+//				if ( superClass instanceof ClassSymbol ) {
+//					return (ClassSymbol)superClass;
+//				}
+//			}
+//		}
+//		return null;
+//	}
 }
