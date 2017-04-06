@@ -8,13 +8,15 @@ import cs652.j.semantics.JMethod;
 public class FuncName extends OutputModelObject {
     public JMethod method;
     public int slotNumber;
-    public FuncName(JMethod method){
-        this.method = method;
-    }
+
     public String getClassName(){
             return method.getEnclosingScope().getName();
     }
-    public String getMethodName(){
+    public String getMethodName()
+    {
         return method.getName();
+    }
+    public FuncName(JMethod method){
+        this.method = method;
     }
 }

@@ -1,5 +1,7 @@
 package cs652.j.codegen.model;
 
+import cs652.j.semantics.JMethod;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,6 +12,8 @@ public class MethodCall extends Expr {
     //receiver, receiverType, fptrType, args
     public String name;
 
+//    @ModelElement
+//    public FuncName funcName;
     @ModelElement
     public Expr receiver;
 

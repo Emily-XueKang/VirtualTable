@@ -80,9 +80,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		currentClass = ctx.scope;
 		ClassDef classDef = new ClassDef(currentClass);
 
-		System.out.println("ctx.scope:" + ctx.scope);
-		System.out.println("currentfield: "+ ctx.scope.getFields());
-
 		for(FieldSymbol sc : ctx.scope.getFields()){
 			String varname = sc.getName();
 			TypeSpec vartype;
@@ -95,47 +92,26 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 			classDef.fields.add((new VarDef(varname,vartype)));
 		}
 
-//		if(currentClass.getSuperClassScope() != null) {
-//			System.out.println("super field:" +currentClass.getSuperClassScope().getDefinedFields());
-//			for(FieldSymbol sc : currentClass.getSuperClassScope().getFields()){
-//				String varname = sc.getName();
-//				TypeSpec vartype;
-//				if(sc.getType() instanceof JPrimitiveType){
-//					vartype = new PrimitiveTypeSpec(sc.getType().getName());
-//				}
-//				else{
-//					vartype = new ObjectTypeSpec(sc.getType().getName());
-//				}
-//				System.out.println("addfield: " + varname);
-//				classDef.fields.add((new VarDef(varname,vartype)));
-//			}
-//		}
-
 		Set<MethodSymbol> jMethods = currentClass.getMethods();
 		for(MethodSymbol jMethod : jMethods){
 			FuncName fm = new FuncName((JMethod)jMethod);
 			fm.slotNumber = fm.method.getSlotNumber();
+			//System.out.println("class:" + currentClass + "//fm.classname:" + fm.getClassName()+ "//fm.mathodname:" + fm.getMethodName());
 			classDef.vtable.add(fm);
 		}
 
 		for(ParseTree child : ctx.classBody().children){
 			OutputModelObject omo = visit(child);
-			if(omo instanceof VarDef){
-				classDef.fields.add((VarDef) omo);
-			}
-			else if(omo instanceof MethodDef){
+//			if(omo instanceof VarDef){
+//				classDef.fields.add((VarDef) omo);
+//			}
+			if(omo instanceof MethodDef){
 				// omo instance of MethodDef
 				classDef.methods.add((MethodDef) omo);
 			}
+
 		}
-
-
 		currentScope = currentScope.getEnclosingScope();
-//		System.out.println("returnclass fields: "+classDef.fields);
-//		List<VarDef> superFields = new ArrayList<>();
-//		for(VarDef sf: classDef.fields){
-//			superFields.add(sf);
-//		}
 		return classDef;
 	}
 
@@ -230,17 +206,77 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	}
 
 	@Override
-	public OutputModelObject visitQMethodCall(JParser.QMethodCallContext ctx) {
-		VarRef receiver = (VarRef) visit(ctx.expression());
+	public OutputModelObject visitMethodCall(JParser.MethodCallContext ctx) {
 		TypeSpec returnType = new PrimitiveTypeSpec(ctx.type.getName());
 		FuncPtrType fpt = new FuncPtrType(returnType);
 
 		String methodname = ctx.ID().getText();
 		MethodCall methodCall = new MethodCall(methodname);
+		if(ctx.expressionList()!=null){
+			for(ParseTree a : ctx.expressionList().expression()){
+				OutputModelObject vr = visit(a);
+				TypeCast tc;
+				if(vr instanceof LiteralRef){
+					//tc = new TypeCast(((LiteralRef) vr).literal,null);
+					tc = new TypeCast((Expr) vr,null);
+					fpt.argTypes.add(((LiteralRef) vr).type);
+					methodCall.args.add(tc);
+				}
+				else if(vr instanceof VarRef){
+					tc = new TypeCast(((VarRef) vr),((VarRef) vr).vartype);
+					fpt.argTypes.add(((VarRef) vr).vartype);
+					methodCall.args.add(tc);
+				}
+				else if(vr instanceof CtorCall){
+					TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
+					tc = new TypeCast((CtorCall) vr, ctorType);
+					fpt.argTypes.add(((CtorCall) vr).type);
+					methodCall.args.add(tc);
+				}
+			}
+		}
+		methodCall.fptrType = fpt;
+		return methodCall;
+	}
 
-		TypeSpec receiverType = receiver.vartype;
+	@Override
+	public OutputModelObject visitQMethodCall(JParser.QMethodCallContext ctx) {
+		//VarRef receiver = (VarRef) visit(ctx.expression());
+		Expr receiver = (Expr) visit(ctx.expression());
+		TypeSpec receiverType;
 
-		TypeCast implicit = new TypeCast(receiver,receiverType);
+		if(receiver instanceof FieldRef){
+			System.out.println("receiver is field");
+			receiverType = ((FieldRef) receiver).object.type;
+		}
+		else if(receiver instanceof ThisRef){
+			System.out.println("receiver is this");
+			receiverType = ((ThisRef) receiver).type;
+		}
+		else /*if(receiver instanceof VarRef)*/{
+			System.out.println("receiver is var");
+			receiverType = ((VarRef) receiver).vartype;
+		}
+		System.out.println("receiverType:" + receiverType);
+
+		String className = ctx.expression().type.getName();
+		String methodname = ctx.ID().getText();
+		JClass jClass = (JClass) currentScope.resolve(className);
+		JMethod jMethod = (JMethod) jClass.resolveMethod(methodname);
+		FuncName funcName = new FuncName(jMethod);
+		String receiverclass = funcName.getClassName();
+		ObjectTypeSpec receiveclassType = new ObjectTypeSpec(receiverclass);
+
+		TypeSpec returnType = new PrimitiveTypeSpec(ctx.type.getName());
+
+		FuncPtrType fpt = new FuncPtrType(returnType);
+
+		MethodCall methodCall = new MethodCall(methodname);
+
+		//receiverType = receiveclassType;
+
+		//TypeCast implicit = new TypeCast(receiver,receiverType);
+		TypeCast implicit = new TypeCast(receiver,receiveclassType);
 		methodCall.args.add(implicit);
 		fpt.argTypes.add(implicit.type);
 		if(ctx.expressionList()!=null){
