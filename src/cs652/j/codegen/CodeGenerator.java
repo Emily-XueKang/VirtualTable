@@ -1,28 +1,6 @@
 package cs652.j.codegen;
 
-//import cs652.j.codegen.model.AssignStat;
 import cs652.j.codegen.model.*;
-//import cs652.j.codegen.model.CallStat;
-//import cs652.j.codegen.model.CtorCall;
-//import cs652.j.codegen.model.Expr;
-//import cs652.j.codegen.model.FieldRef;
-//import cs652.j.codegen.model.FuncName;
-//import cs652.j.codegen.model.IfElseStat;
-//import cs652.j.codegen.model.IfStat;
-//import cs652.j.codegen.model.LiteralRef;
-//import cs652.j.codegen.model.MethodCall;
-//import cs652.j.codegen.model.MethodDef;
-//import cs652.j.codegen.model.NullRef;
-//import cs652.j.codegen.model.ObjectTypeSpec;
-//import cs652.j.codegen.model.PrintStat;
-//import cs652.j.codegen.model.PrintStringStat;
-//import cs652.j.codegen.model.ReturnStat;
-//import cs652.j.codegen.model.Stat;
-//import cs652.j.codegen.model.ThisRef;
-//import cs652.j.codegen.model.TypeCast;
-//import cs652.j.codegen.model.TypeSpec;
-//import cs652.j.codegen.model.VarRef;
-//import cs652.j.codegen.model.WhileStat;
 import cs652.j.parser.JBaseVisitor;
 import cs652.j.parser.JParser;
 import cs652.j.semantics.JClass;
@@ -35,7 +13,6 @@ import org.antlr.symtab.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
-import sun.reflect.generics.tree.TypeSignature;
 
 import javax.management.JMException;
 import java.util.ArrayList;
@@ -207,35 +184,25 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 	@Override
 	public OutputModelObject visitMethodCall(JParser.MethodCallContext ctx) {
-		TypeSpec returnType = new PrimitiveTypeSpec(ctx.type.getName());
-		FuncPtrType fpt = new FuncPtrType(returnType);
-
 		String methodname = ctx.ID().getText();
 		MethodCall methodCall = new MethodCall(methodname);
-		if(ctx.expressionList()!=null){
-			for(ParseTree a : ctx.expressionList().expression()){
-				OutputModelObject vr = visit(a);
-				TypeCast tc;
-				if(vr instanceof LiteralRef){
-					//tc = new TypeCast(((LiteralRef) vr).literal,null);
-					tc = new TypeCast((Expr) vr,null);
-					fpt.argTypes.add(((LiteralRef) vr).type);
-					methodCall.args.add(tc);
-				}
-				else if(vr instanceof VarRef){
-					tc = new TypeCast(((VarRef) vr),((VarRef) vr).vartype);
-					fpt.argTypes.add(((VarRef) vr).vartype);
-					methodCall.args.add(tc);
-				}
-				else if(vr instanceof CtorCall){
-					TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
-					tc = new TypeCast((CtorCall) vr, ctorType);
-					fpt.argTypes.add(((CtorCall) vr).type);
-					methodCall.args.add(tc);
-				}
-			}
-		}
-		methodCall.fptrType = fpt;
+		Expr receiver;
+
+		System.out.println("currentclass: "+ currentClass.getName());
+		JClass jClass = (JClass) currentScope.resolve(currentClass.getName());
+
+		TypeSpec returnType = new PrimitiveTypeSpec(ctx.type.getName());
+		JMethod jMethod = (JMethod) jClass.resolveMethod(methodname);
+		FuncName funcName = new FuncName(jMethod);
+		String receiverclass = funcName.getClassName();
+		ObjectTypeSpec receiverType= new ObjectTypeSpec(receiverclass);
+
+		receiver = new VarRef(ctx.type.getName(), receiverType);
+		TypeCast implicit = new TypeCast(receiver,receiverType);
+
+		FuncPtrType fpt = new FuncPtrType(returnType);
+		methodCall.args.add(implicit);
+		fpt.argTypes.add(implicit.type);
 		return methodCall;
 	}
 
@@ -257,7 +224,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 			System.out.println("receiver is var");
 			receiverType = ((VarRef) receiver).vartype;
 		}
-		System.out.println("receiverType:" + receiverType);
 
 		String className = ctx.expression().type.getName();
 		String methodname = ctx.ID().getText();
@@ -411,10 +377,16 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		if(visit(ctx.expression())instanceof VarRef){
 			fieldRef.object = (VarRef)visit(ctx.expression());
 		}
-		else if(visit(ctx.expression()) instanceof ThisRef)
+		else if(visit(ctx.expression()) instanceof ThisRef){
 			fieldRef.object = new ThisRef("this",new ObjectTypeSpec(ctx.expression().type.getName()));
-		else
+		}
+		else if(visit(ctx.expression()) instanceof MethodCall){
+			fieldRef.object = (MethodCall) visit(ctx.expression());
+		}
+		else{
 			fieldRef.object = (FieldRef) visit(ctx.expression());
+		}
+
 		return fieldRef;
 	}
 
