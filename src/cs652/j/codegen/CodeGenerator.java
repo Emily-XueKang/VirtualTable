@@ -4,7 +4,6 @@ import cs652.j.codegen.model.*;
 import cs652.j.parser.JBaseVisitor;
 import cs652.j.parser.JParser;
 import cs652.j.semantics.JClass;
-//import cs652.j.semantics.JField;
 import cs652.j.semantics.JField;
 import cs652.j.semantics.JMethod;
 import cs652.j.semantics.JPrimitiveType;
@@ -14,7 +13,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
 
-import javax.management.JMException;
 import java.util.*;
 
 public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
@@ -72,7 +70,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		for(MethodSymbol jMethod : jMethods){
 			FuncName fm = new FuncName((JMethod)jMethod);
 			fm.slotNumber = fm.method.getSlotNumber();
-			//System.out.println("class:" + currentClass + "//fm.classname:" + fm.getClassName()+ "//fm.mathodname:" + fm.getMethodName());
 			VtableList.add(fm);
 		}
 		Collections.sort(VtableList, new Comparator<FuncName>() {
@@ -86,9 +83,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 		for(ParseTree child : ctx.classBody().children){
 			OutputModelObject omo = visit(child);
-//			if(omo instanceof VarDef){
-//				classDef.fields.add((VarDef) omo);
-//			}
 			if(omo instanceof MethodDef){
 				// omo instance of MethodDef
 				classDef.methods.add((MethodDef) omo);
@@ -99,7 +93,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return classDef;
 	}
 
-	/*fileds decl in classdeclaration*/
 	@Override
 	public OutputModelObject visitFieldDeclaration(JParser.FieldDeclarationContext ctx) {
 		return new VarDef(ctx.ID().getText(), (TypeSpec) visit(ctx.jType()));
@@ -171,7 +164,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		return block;
 	}
 
-	//visitLocalVarStat call the visitLocalVariable to visit this alternative's child/children
 	@Override
 	public OutputModelObject visitLocalVarStat(JParser.LocalVarStatContext ctx){
 		return visit(ctx.localVariableDeclaration());
@@ -197,7 +189,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		MethodCall methodCall = new MethodCall(methodname);
 		Expr receiver;
 
-		System.out.println("currentclass: "+ currentClass.getName());
 		JClass jClass = (JClass) currentScope.resolve(currentClass.getName());
 
 		TypeSpec returnType = new PrimitiveTypeSpec(ctx.type.getName());
@@ -206,7 +197,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		String receiverclass = funcName.getClassName();
         String currentclass = currentClass.getName();
         methodCall.currentclassname = currentclass;
-        System.out.println("receiverclass: "+ receiverclass);
         ObjectTypeSpec receiverType= new ObjectTypeSpec(receiverclass);
 
 		receiver = new VarRef("this", receiverType);
@@ -371,9 +361,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
                 assignStat.typeCast = tc;
             }
         }
-//        else{
-//            assignStat.typeCast = null;
-//        }
 		return assignStat;
 	}
 
@@ -391,7 +378,6 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		else{
 			vartype = new ObjectTypeSpec(ctx.type.getName());
 		}
-
 		return new VarRef(varname,vartype);
 	}
 
@@ -446,6 +432,5 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public OutputModelObject visitPrintStringStat(JParser.PrintStringStatContext ctx) {
 		return new PrintStringStat(ctx.STRING().getText());
 	}
-
 
 }
