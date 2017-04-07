@@ -68,7 +68,7 @@ FuncName(f)         ::= "<f.ClassName>_<f.MethodName>"
 ObjectTypeSpec(o)   ::= "<o.name> *"
 PrimitiveTypeSpec(p)::= "<p.name>"
 
-AssignStat(a,left,right) ::= "<left> = <right>"
+AssignStat(a,left,right,typeCast) ::= "<left> = <if(typeCast)>((<a.typeCast.type.name> *) <right>)<else><right><endif>"
 PrintStringStat(p)  ::= "printf(<p.thestring>)"
 PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
 CallStat(c,call)    ::= "<call>"
@@ -88,7 +88,7 @@ VarRef(v)           ::= "<v.type><v.name>"
 FieldRef(f, object) ::= "<object>-><f.name>"
 ThisRef(t)          ::= "this"
 MethodCall(m, receiver, receiverType, fptrType, args) ::= <<
-(*<fptrType>(*(<m.receiver.name>)->clazz->_vtable)[<m.receiverType.name>_<m.name>_SLOT])(<args; separator=",">)
+(*<fptrType>(*(<m.receiver.name>)->clazz->_vtable)[<if(m.currentclassname)><m.currentclassname>_<m.name>_SLOT])<else><m.receiverType.name>_<m.name>_SLOT])<endif>(<args; separator=",">)
 >>
 
 FuncPtrType(f, returnType, argTypes) ::= "(<returnType> (*)(<argTypes; separator=\",\">))"

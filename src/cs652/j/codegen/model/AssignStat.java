@@ -8,6 +8,8 @@ public class AssignStat extends Stat{
     public Expr left;
     @ModelElement
     public OutputModelObject right;
+    @ModelElement
+    public TypeCast typeCast;
 
     public AssignStat(Expr leftvar, OutputModelObject rightvar){
         this.left = leftvar;

@@ -15,9 +15,7 @@ import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
 
 import javax.management.JMException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public STGroup templates;
@@ -70,12 +68,22 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		}
 
 		Set<MethodSymbol> jMethods = currentClass.getMethods();
+		List<FuncName> VtableList = new ArrayList<>();
 		for(MethodSymbol jMethod : jMethods){
 			FuncName fm = new FuncName((JMethod)jMethod);
 			fm.slotNumber = fm.method.getSlotNumber();
 			//System.out.println("class:" + currentClass + "//fm.classname:" + fm.getClassName()+ "//fm.mathodname:" + fm.getMethodName());
-			classDef.vtable.add(fm);
+			VtableList.add(fm);
 		}
+		Collections.sort(VtableList, new Comparator<FuncName>() {
+			@Override
+			public int compare(FuncName o1, FuncName o2) {
+				return (o1.slotNumber - o2.slotNumber);
+			}
+		});
+
+		classDef.vtable = VtableList;
+
 
 		for(ParseTree child : ctx.classBody().children){
 			OutputModelObject omo = visit(child);
@@ -195,7 +203,10 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		JMethod jMethod = (JMethod) jClass.resolveMethod(methodname);
 		FuncName funcName = new FuncName(jMethod);
 		String receiverclass = funcName.getClassName();
-		ObjectTypeSpec receiverType= new ObjectTypeSpec(receiverclass);
+        String currentclass = currentClass.getName();
+        methodCall.currentclassname = currentclass;
+        System.out.println("receiverclass: "+ receiverclass);
+        ObjectTypeSpec receiverType= new ObjectTypeSpec(receiverclass);
 
 		receiver = new VarRef("this", receiverType);
 
@@ -230,6 +241,8 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		}
 
 		String className = ctx.expression().type.getName();
+        //String currentclass = currentScope.getName();
+
 		String methodname = ctx.ID().getText();
 		JClass jClass = (JClass) currentScope.resolve(className);
 		JMethod jMethod = (JMethod) jClass.resolveMethod(methodname);
@@ -242,6 +255,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		FuncPtrType fpt = new FuncPtrType(returnType);
 
 		MethodCall methodCall = new MethodCall(methodname);
+        //methodCall.currenclassname = currentclass;
 
 		//receiverType = receiveclassType;
 
@@ -266,7 +280,8 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 				}
 				else if(vr instanceof CtorCall){
 					TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
-					tc = new TypeCast((CtorCall) vr, ctorType);
+//					tc = new TypeCast((CtorCall) vr, ctorType);
+					tc = new TypeCast((CtorCall)vr,null);
 					fpt.argTypes.add(((CtorCall) vr).type);
 					methodCall.args.add(tc);
 				}
@@ -317,6 +332,11 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	}
 
 	@Override
+	public OutputModelObject visitNullRef(JParser.NullRefContext ctx) {
+		return new NullRef("NULL", null);
+	}
+
+	@Override
 	public OutputModelObject visitJType(JParser.JTypeContext ctx) {
 		String typename;
 		if(ctx.ID()!= null){
@@ -341,7 +361,18 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	public OutputModelObject visitAssignStat(JParser.AssignStatContext ctx) {
 		Expr leftvar = (Expr) visit(ctx.expression(0));
 		OutputModelObject rightvar = visit(ctx.expression(1));
-		AssignStat assignStat = new AssignStat(leftvar,rightvar);
+        AssignStat assignStat = new AssignStat(leftvar,rightvar);
+
+        if((ctx.expression(0).type != ctx.expression(1).type)){
+            Type righttype = ctx.expression(0).type;
+            if(!(righttype instanceof JPrimitiveType) ){
+                TypeCast tc = new TypeCast((Expr) rightvar, new ObjectTypeSpec(ctx.expression(0).type.getName()));
+                assignStat.typeCast = tc;
+            }
+        }
+//        else{
+//            assignStat.typeCast = null;
+//        }
 		return assignStat;
 	}
 

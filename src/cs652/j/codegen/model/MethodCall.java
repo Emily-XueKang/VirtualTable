@@ -14,6 +14,8 @@ public class MethodCall extends Expr {
 
 //    @ModelElement
 //    public FuncName funcName;
+    public String currentclassname;
+
     @ModelElement
     public Expr receiver;
 
