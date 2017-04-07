@@ -5,9 +5,9 @@ package cs652.j.codegen.model;
  */
 public class CallStat extends Stat {
     @ModelElement
-    public OutputModelObject call;
+    public Expr call;
 
-    public CallStat(OutputModelObject call){
+    public CallStat(Expr call){
         this.call = call;
     }
 

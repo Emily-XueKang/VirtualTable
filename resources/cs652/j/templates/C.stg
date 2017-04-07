@@ -30,7 +30,7 @@ typedef struct {
     <fields:{f | <f>;}; separator = "\n">
 } <class.Name>;
 
-<if(methods)><class.vtable:{v | #define <class.Name>_<v.MethodName>_SLOT <v.slotNumber>}; separator = "\n"><endif>
+<class.vtable:{v | #define <class.Name>_<v.MethodName>_SLOT <v.slotNumber>}; separator = "\n">
 
 <if(methods)><methods:{m | <m>}; separator = "\n"><endif>
 
@@ -58,7 +58,7 @@ MainMethod(main,funcName,returnType,args,body) ::= <<
 
 Block(block, locals, instrs) ::= <<
 <locals:{lo | <lo>;}; separator = "\n">
-<instrs:{in | <in>;};separator = "\n">
+<instrs:{in | <in>};separator = "\n">
 >>
 
 VarDef(var, type)   ::= "<type> <var.id>"
@@ -68,16 +68,16 @@ FuncName(f)         ::= "<f.ClassName>_<f.MethodName>"
 ObjectTypeSpec(o)   ::= "<o.name> *"
 PrimitiveTypeSpec(p)::= "<p.name>"
 
-AssignStat(a,left,right,typeCast) ::= "<left> = <if(typeCast)>((<a.typeCast.type.name> *) <right>)<else><right><endif>"
-PrintStringStat(p)  ::= "printf(<p.thestring>)"
-PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">)"
-CallStat(c,call)    ::= "<call>"
+AssignStat(a,left,right,typeCast) ::= "<left> = <if(typeCast)>((<a.typeCast.type.name> *) <right>)<else><right><endif>;"
+PrintStringStat(p)  ::= "printf(<p.thestring>);"
+PrintStat(p,args)   ::= "printf(<p.format>, <args; separator=\",\">);"
+CallStat(c,call)    ::= "<call>;"
 CtorCall(ctor)      ::= "((<ctor.id> *)alloc(&<ctor.id>_metadata))"
-ReturnStat(r,expr)  ::= "return <expr>"
+ReturnStat(r,expr)  ::= "return <expr>;"
 WhileStat(w,condition, stat) ::= "while <w.cond> {<stat>}"
 IfStat(i,condition, stat) ::= "if <i.cond> <stat>"
 IfElseStat(i,condition, stat, elseStat) ::= <<
-if <i.cond> <stat>;
+if <i.cond> <stat>
 else <elseStat>
 >>
 
@@ -88,7 +88,7 @@ VarRef(v)           ::= "<v.type><v.name>"
 FieldRef(f, object) ::= "<object>-><f.name>"
 ThisRef(t)          ::= "this"
 MethodCall(m, receiver, receiverType, fptrType, args) ::= <<
-(*<fptrType>(*(<m.receiver.name>)->clazz->_vtable)[<if(m.currentclassname)><m.currentclassname>_<m.name>_SLOT])<else><m.receiverType.name>_<m.name>_SLOT])<endif>(<args; separator=",">)
+(*<fptrType>(*(<if(m.receiver.object)><receiver><else><m.receiver.name><endif>)->clazz->_vtable)[<if(m.currentclassname)><m.currentclassname>_<m.name>_SLOT])<else><m.receiverType.name>_<m.name>_SLOT])<endif>(<args; separator=",">)
 >>
 
 FuncPtrType(f, returnType, argTypes) ::= "(<returnType> (*)(<argTypes; separator=\",\">))"
