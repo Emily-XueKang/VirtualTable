@@ -137,7 +137,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		MainMethod mainMethod = new MainMethod(funcName);
 		mainMethod.returnType = new PrimitiveTypeSpec("int");
 		mainMethod.args.add(new VarDef("argc", new PrimitiveTypeSpec("int")));
-		mainMethod.args.add(new VarDef("*argv[]",new PrimitiveTypeSpec("char")));
+		mainMethod.args.add(new VarDef("*argv[]",new PrimitiveTypeSpec("char"))); // you cannot have C strings in the model
 		mainMethod.body = (Block)visit(ctx.block());
 		return mainMethod;
 	}
@@ -207,6 +207,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		methodCall.fptrType = fpt;
 		methodCall.args.add(implicit);
 		fpt.argTypes.add(implicit.type);
+// whoa. where are the arguments on this method call? you are qualified method call below adds them so this should as well
 		methodCall.receiver = receiver;
 		methodCall.receiverType = receiverType;
 		return methodCall;
@@ -224,6 +225,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		Expr receiver = (Expr) visit(ctx.expression());
 		ObjectTypeSpec receiveclassType = new ObjectTypeSpec(receiverclass);
 
+// why are you working so hard to get the receiver type? is this not why we had the compute types phase?
 		if(receiver instanceof FieldRef){
 			receiverType = ((FieldRef) receiver).object.type;
 		}
@@ -239,6 +241,8 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 		String typename = ctx.type.getName();
 		TypeSpec returnType;
+// you should check whether the symbol table object is an object type not compare strings
+// type instanceof JClass
 		if(typename.equals("int")||typename.equals("float")||typename.equals("string")||typename.equals("void")){
 			returnType = new PrimitiveTypeSpec(typename);
 		}else{
@@ -254,6 +258,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 			for(ParseTree a : ctx.expressionList().expression()){
 				OutputModelObject vr = visit(a);
 				TypeCast tc;
+// why are you checking to see what these objects are? It's like parsing again? visiting the child should simply give you the right object and add that to the method call list. if type instanceof JClass then at a typecast otherwise just add
 				if(vr instanceof LiteralRef){
 					tc = new TypeCast((Expr) vr,null);
 					fpt.argTypes.add(((LiteralRef) vr).type);
@@ -330,6 +335,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	@Override
 	public OutputModelObject visitJType(JParser.JTypeContext ctx) {
 		String typename;
+// check type instanceof JClass; anytime you start comparing strings question what you are doing
 		if(ctx.ID()!= null){
 			typename = ctx.ID().getText();
 			return new ObjectTypeSpec(typename);
@@ -371,6 +377,7 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		if(var instanceof JField){
 			varname = "this->" + varname;
 		}
+// again don't compare strings
 		TypeSpec vartype;
 		if(ctx.type.getName().equals("int") ||ctx.type.getName().equals("float")|| ctx.type.getName().equals("float")){
 			vartype = new PrimitiveTypeSpec(ctx.type.getName());
@@ -395,7 +402,9 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 	@Override
 	public OutputModelObject visitFieldRef(JParser.FieldRefContext ctx) {
 		String name = ctx.ID().getText();
+// you should use constructor arguments rather than setting fields as you do here
 		FieldRef fieldRef = new FieldRef(name);
+// why are you repeatedly visiting and also checking the results? you do not need to
 		if(visit(ctx.expression())instanceof VarRef){
 			fieldRef.object = (VarRef)visit(ctx.expression());
 		}
