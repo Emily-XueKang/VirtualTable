@@ -208,6 +208,36 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		methodCall.args.add(implicit);
 		fpt.argTypes.add(implicit.type);
 // whoa. where are the arguments on this method call? you are qualified method call below adds them so this should as well
+		if(ctx.expressionList()!=null){
+			for(ParseTree a : ctx.expressionList().expression()){
+				OutputModelObject vr = visit(a);
+				TypeCast tc;
+				if(vr instanceof LiteralRef){
+					tc = new TypeCast((Expr) vr,null);
+					fpt.argTypes.add(((LiteralRef) vr).type);
+					methodCall.args.add(tc);
+				}
+				else if(vr instanceof VarRef){
+					tc = new TypeCast(((VarRef) vr),((VarRef) vr).vartype);
+					fpt.argTypes.add(((VarRef) vr).vartype);
+					methodCall.args.add(tc);
+				}
+				else if(vr instanceof CtorCall){
+					TypeSpec ctorType = new ObjectTypeSpec(((CtorCall) vr).id);
+//					tc = new TypeCast((CtorCall) vr, ctorType);
+					tc = new TypeCast((CtorCall)vr,null);
+					fpt.argTypes.add(((CtorCall) vr).type);
+					methodCall.args.add(tc);
+				}
+				else if(vr instanceof FieldRef){
+					tc = new TypeCast(((FieldRef) vr).object,((FieldRef) vr).type);
+					fpt.argTypes.add(((VarRef) vr).vartype);
+					methodCall.args.add(tc);
+				}
+			}
+		}
+		methodCall.fptrType = fpt;
+
 		methodCall.receiver = receiver;
 		methodCall.receiverType = receiverType;
 		return methodCall;
@@ -226,24 +256,13 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		ObjectTypeSpec receiveclassType = new ObjectTypeSpec(receiverclass);
 
 // why are you working so hard to get the receiver type? is this not why we had the compute types phase?
-		if(receiver instanceof FieldRef){
-			receiverType = ((FieldRef) receiver).object.type;
-		}
-		else if(receiver instanceof ThisRef){
-			receiverType = ((ThisRef) receiver).type;
-		}
-		else if(receiver instanceof VarRef){
-			receiverType = ((VarRef) receiver).vartype;
-		}
-		else{
-			receiverType = receiveclassType;
-		}
+		receiverType = receiver.type;
 
 		String typename = ctx.type.getName();
 		TypeSpec returnType;
 // you should check whether the symbol table object is an object type not compare strings
 // type instanceof JClass
-		if(typename.equals("int")||typename.equals("float")||typename.equals("string")||typename.equals("void")){
+		if(!(currentScope.resolve(typename) instanceof JClass)){
 			returnType = new PrimitiveTypeSpec(typename);
 		}else{
 			returnType = new ObjectTypeSpec(typename);
@@ -258,7 +277,12 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 			for(ParseTree a : ctx.expressionList().expression()){
 				OutputModelObject vr = visit(a);
 				TypeCast tc;
-// why are you checking to see what these objects are? It's like parsing again? visiting the child should simply give you the right object and add that to the method call list. if type instanceof JClass then at a typecast otherwise just add
+// why are you checking to see what these objects are?
+// It's like parsing again?
+// visiting the child should simply give you the right object
+// and add that to the method call list.
+// if type instanceof JClass then at a typecast otherwise just add
+
 				if(vr instanceof LiteralRef){
 					tc = new TypeCast((Expr) vr,null);
 					fpt.argTypes.add(((LiteralRef) vr).type);
@@ -334,26 +358,15 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 
 	@Override
 	public OutputModelObject visitJType(JParser.JTypeContext ctx) {
-		String typename;
+		String typename = ctx.getText();
 // check type instanceof JClass; anytime you start comparing strings question what you are doing
-		if(ctx.ID()!= null){
+		if (!((currentScope.resolve(typename)) instanceof JClass)) {
+			return new PrimitiveTypeSpec(typename);
+		} else {
 			typename = ctx.ID().getText();
 			return new ObjectTypeSpec(typename);
 		}
-		else if(ctx.getText().equals("int")){
-			typename = "int";
-			return new PrimitiveTypeSpec(typename);
-		}
-		else if(ctx.getText().equals("float")){
-			typename = "float";
-			return new PrimitiveTypeSpec(typename);
-		}
-		else{
-			typename = "void";
-			return new PrimitiveTypeSpec(typename);
-		}
 	}
-
 	@Override
 	public OutputModelObject visitAssignStat(JParser.AssignStatContext ctx) {
 		Expr leftvar = (Expr) visit(ctx.expression(0));
@@ -379,11 +392,11 @@ public class CodeGenerator extends JBaseVisitor<OutputModelObject> {
 		}
 // again don't compare strings
 		TypeSpec vartype;
-		if(ctx.type.getName().equals("int") ||ctx.type.getName().equals("float")|| ctx.type.getName().equals("float")){
-			vartype = new PrimitiveTypeSpec(ctx.type.getName());
+		if((currentScope.resolve(ctx.type.getName()) instanceof JClass)){
+			vartype = new ObjectTypeSpec(ctx.type.getName());
 		}
 		else{
-			vartype = new ObjectTypeSpec(ctx.type.getName());
+			vartype = new PrimitiveTypeSpec(ctx.type.getName());
 		}
 		return new VarRef(varname,vartype);
 	}
